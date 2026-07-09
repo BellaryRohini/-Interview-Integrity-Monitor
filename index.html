@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview Integrity Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --paper: #ffffff;
+    --ink: #1c2430;
+    --muted: #64707d;
+    --line: #dde3e9;
+    --navy: #14324f;
+    --accent: #0f6e63;
+    --accent-soft: #e4f2ef;
+    --clean: #1e8a5f;
+    --clean-bg: #e6f5ee;
+    --suspicious: #a3690a;
+    --suspicious-bg: #fbf0dd;
+    --high: #b8412f;
+    --high-bg: #fbe8e4;
+    --shadow: 0 1px 2px rgba(20,50,79,.05), 0 8px 24px rgba(20,50,79,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'Inter', -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 920px; margin: 0 auto; padding: 40px 20px 100px; line-height: 1.55;
+  }
+  h1, h2, h3 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 600; margin: 0; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px; display: block;
+  }
+  h1 { font-size: 27px; color: var(--navy); }
+  .sub { color: var(--muted); font-size: 14.5px; margin: 8px 0 32px; max-width: 60ch; }
+
+  .panel {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px; margin-bottom: 18px; box-shadow: var(--shadow);
+  }
+  .panel h2 { font-size: 18px; color: var(--navy); margin-bottom: 4px; }
+  .panel-note { color: var(--muted); font-size: 13.5px; margin-bottom: 14px; }
+
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+  .field input {
+    background: #fbfcfd; border: 1px solid var(--line); color: var(--ink);
+    padding: 8px 10px; border-radius: 8px; font-size: 13.5px; font-family: inherit; min-width: 200px;
+  }
+
+  button {
+    background: var(--navy); color: #fff; border: none; padding: 11px 20px;
+    border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;
+    font-family: 'Inter', sans-serif; transition: opacity .15s;
+  }
+  button:hover { opacity: .88; }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+  button.secondary { background: transparent; border: 1px solid var(--line); color: var(--navy); }
+  button.accent { background: var(--accent); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px;
+    font-size: 12.5px; font-weight: 600;
+  }
+  .badge.clean { background: var(--clean-bg); color: var(--clean); }
+  .badge.suspicious { background: var(--suspicious-bg); color: var(--suspicious); }
+  .badge.high { background: var(--high-bg); color: var(--high); }
+  .badge.info { background: var(--accent-soft); color: var(--accent); }
+
+  #question { font-size: 19px; font-weight: 600; margin: 14px 0; min-height: 50px; font-family: 'Source Serif 4', serif; color: var(--navy); }
+  #transcript {
+    background: #fafbfc; border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; min-height: 60px; font-size: 14px; color: var(--muted); margin-top: 10px;
+  }
+  .timer { font-size: 13px; color: var(--muted); }
+
+  /* ---- Dashboard header / risk card ---- */
+  .report-header {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 18px;
+  }
+  .report-meta { font-size: 13.5px; color: var(--muted); }
+  .report-meta div { margin-top: 3px; }
+  .report-meta strong { color: var(--ink); }
+
+  .risk-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .risk-grid { grid-template-columns: 1fr; } }
+
+  .risk-card {
+    border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: #fbfcfd;
+  }
+  .risk-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+  .risk-value { font-family: 'Source Serif 4', serif; font-size: 30px; font-weight: 700; margin: 6px 0 8px; }
+  .risk-value.clean { color: var(--clean); }
+  .risk-value.suspicious { color: var(--suspicious); }
+  .risk-value.high { color: var(--high); }
+  .risk-sub { font-size: 13px; color: var(--muted); }
+
+  .bar-track { height: 8px; border-radius: 6px; background: var(--line); overflow: hidden; margin-top: 10px; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width .4s; }
+  .bar-fill.clean { background: var(--clean); }
+  .bar-fill.suspicious { background: var(--suspicious); }
+  .bar-fill.high { background: var(--high); }
+  .bar-fill.confidence { background: var(--navy); }
+
+  /* ---- What we noticed ---- */
+  ul.notice-list { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 10px; }
+  ul.notice-list li {
+    display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; padding: 10px 12px;
+    border-radius: 8px; background: #fbfcfd; border: 1px solid var(--line);
+  }
+  ul.notice-list li.ok .icon { color: var(--clean); }
+  ul.notice-list li.warn .icon { color: var(--suspicious); background: var(--suspicious-bg); }
+  ul.notice-list li .icon {
+    font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px;
+  }
+  ul.notice-list li.ok .icon { background: var(--clean-bg); }
+
+  /* ---- Question breakdown ---- */
+  .qcard {
+    border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 10px;
+    display: flex; justify-content: space-between; align-items: center; gap: 14px; background: #fbfcfd;
+  }
+  .qcard .qtitle { font-weight: 600; font-size: 14.5px; color: var(--navy); }
+  .qcard .qreason { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  .qcard .qmetrics { font-size: 11.5px; color: var(--muted); margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ---- Recommendation ---- */
+  .recommendation {
+    border-left: 4px solid var(--navy); background: var(--accent-soft); border-radius: 0 10px 10px 0;
+    padding: 16px 18px; margin-top: 6px;
+  }
+  .recommendation h3 { font-size: 15px; color: var(--navy); margin-bottom: 6px; }
+  .recommendation p { font-size: 13.5px; color: #2a3644; margin: 4px 0; }
+  .recommendation .disclaimer { font-style: italic; color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+
+  .hidden { display: none; }
+  ul.notes { font-size: 13px; color: var(--muted); padding-left: 18px; margin-top: 6px; }
+  #debugPanel {
+    margin-top: 12px; padding: 10px; background: #fafbfc; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 11.5px; color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<span class="eyebrow">Interview Integrity Monitor</span>
+<h1>Welcome to your interview</h1>
+<div class="sub">We'll ask you a few questions and record your camera, microphone, and audio setup during this session. This helps us keep the interview process fair for everyone. Please answer naturally — there's no trick to it.</div>
+
+<!-- CONSENT / SETUP -->
+<div class="panel" id="setupPanel">
+  <h2>Before we start</h2>
+  <p class="panel-note">
+    This session will access your microphone and camera to transcribe answers and check connected devices.
+    Nothing is recorded or stored beyond this browser session unless it is explicitly downloaded or exported.
+  </p>
+  <div class="row" style="margin-bottom: 16px;">
+    <div class="field">
+      <label for="candidateName">Candidate name</label>
+      <input id="candidateName" type="text" placeholder="e.g. Jordan Lee">
+    </div>
+    <div class="field">
+      <label for="interviewDate">Interview date</label>
+      <input id="interviewDate" type="date">
+    </div>
+    <div class="field">
+      <label for="sessionLabel">Test label (for calibration runs, optional)</label>
+      <input id="sessionLabel" type="text" placeholder="e.g. honest-1 or cheat-sim-1">
+    </div>
+  </div>
+  <div class="row">
+    <button onclick="startSession()">I consent — start session</button>
+    <span id="deviceCheckResult" class="timer"></span>
+  </div>
+</div>
+
+<!-- INTERVIEW -->
+<div class="panel hidden" id="interviewPanel">
+  <div class="row" style="justify-content:space-between;">
+    <span class="badge info" id="qCounter">Question 1</span>
+    <span class="timer" id="latencyReadout"></span>
+  </div>
+  <div id="question"></div>
+  <div class="row">
+    <button id="micBtn" onclick="beginAnswer()">Start answering</button>
+    <button class="secondary" onclick="finishAnswer()" id="doneBtn" disabled>Done answering</button>
+  </div>
+  <div id="transcript">Transcript will appear here as you speak…</div>
+  <video id="camFeed" autoplay muted playsinline style="width:120px; height:90px; border-radius:8px; margin-top:10px; opacity:0.9;"></video>
+  <div id="debugPanel">
+    <div>gaze model: <span id="dbgGazeStatus">loading…</span></div>
+    <div>gaze samples this answer: <span id="dbgGazeSamples">0</span> &nbsp;|&nbsp; sweeps so far: <span id="dbgGazeSweeps">0</span></div>
+    <div>audio devices seen: <span id="dbgAudioDevices">–</span></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel hidden" id="dashboard">
+
+  <div class="report-header">
+    <div>
+      <span class="eyebrow">Interview Report</span>
+      <h2 style="font-size:20px;">Session Summary</h2>
+    </div>
+    <div class="report-meta">
+      <div><strong>Candidate:</strong> <span id="repCandidate">—</span></div>
+      <div><strong>Date:</strong> <span id="repDate">—</span></div>
+      <div><strong>Questions asked:</strong> <span id="repQCount">—</span></div>
+    </div>
+  </div>
+
+  <div class="risk-grid">
+    <div class="risk-card">
+      <div class="label">Overall Risk</div>
+      <div class="risk-value" id="overallRiskText">–</div>
+      <div class="risk-sub" id="riskReasonText"></div>
+      <div class="bar-track"><div class="bar-fill" id="riskBar" style="width:0%"></div></div>
+    </div>
+    <div class="risk-card">
+      <div class="label">Confidence</div>
+      <div class="risk-value" id="confidenceText" style="color:var(--navy);">–</div>
+      <div class="risk-sub" id="confidenceReasonText"></div>
+      <div class="bar-track"><div class="bar-fill confidence" id="confidenceBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px; font-size:16px; color:var(--navy);">What we noticed</h3>
+  <ul class="notice-list" id="noticeList"></ul>
+
+  <h3 style="margin-top:24px; font-size:16px; color:var(--navy);">Question by question</h3>
+  <div id="questionBreakdown"></div>
+
+  <div class="recommendation" style="margin-top:22px;" id="recommendationBox">
+    <h3>Recommendation</h3>
+    <p id="recommendationText"></p>
+    <p class="disclaimer">This is NOT proof of cheating. A reviewer should examine the highlighted answers before making a decision.</p>
+  </div>
+
+  <div style="margin-top:18px; font-size:13px; color:var(--muted);">
+    <strong style="color:var(--ink);">What this tool can and can't tell you</strong>
+    <ul class="notes">
+      <li>It looks for signs that are common when someone is using a hidden AI assistant — things like a connected audio-routing device, answers that all take an unusually similar amount of time to start, and speech that sounds a little too polished. It can't identify which specific AI tool, if any, was used.</li>
+      <li>It won't catch someone using a second device that's completely out of view — for example, a phone off-camera or another person feeding them answers off-mic.</li>
+      <li>Every candidate is compared against their own first answer, not a fixed rule, so naturally well-spoken candidates aren't flagged just for being articulate. That said, this is based on only a handful of questions, so treat the result as a helpful signal, not a final answer — a human should always make the actual call.</li>
+    </ul>
+  </div>
+
+  <div class="row" style="margin-top:18px;">
+    <button class="accent" onclick="downloadPdfReport()">Download PDF report</button>
+    <button class="secondary" onclick="downloadSessionData()">Download raw session data (JSON)</button>
+    <span class="timer">JSON is for threshold calibration — not shown to candidates</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+const QUESTIONS = [
+  "Tell me about a challenging technical problem you solved recently.",
+  "How would you design a rate limiter for a public API?",
+  "Describe a time you disagreed with a teammate's approach. What did you do?",
+  "What's a technology you learned recently that you're excited about?"
+];
+
+const FILLER_WORDS = ["um","uh","erm","hmm","like","you know","i mean","sort of","kind of"];
+const VIRTUAL_AUDIO_PATTERNS = /cable|voicemeeter|blackhole|loopback|virtual|soundflower|vac|stereo mix/i;
+const INDIVIDUAL_LATENCY_FLAG_MS = 3000; // per-question "long delay" callout threshold
+const MIN_WORDS_FOR_SPEECH_ANALYSIS = 8;  // below this, we don't judge fluency — too little data
+
+let currentQ = 0;
+let recognition = null;
+let recognizing = false;
+let questionShownAt = 0;
+let speechStartedAt = null;
+let currentTranscript = "";
+let results = [];       // per-question metrics
+let deviceFlag = { flagged: false, detail: "No virtual audio devices detected" };
+
+// Gaze tracking state
+let faceLandmarker = null;
+let gazeReady = false;
+let gazeSamples = [];      // {t, x, y} for the current answer window
+let gazeLoopActive = false;
+
+async function initGazeTracking() {
+  const filesetResolver = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  const modelConfig = {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      delegate: "GPU"
+    },
+    outputFaceBlendshapes: false,
+    runningMode: "VIDEO",
+    numFaces: 1
+  };
+  try {
+    faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, modelConfig);
+    gazeReady = true;
+    setDebugText('dbgGazeStatus', 'ready (GPU)');
+  } catch (e) {
+    console.warn("GPU delegate failed, retrying on CPU:", e);
+    try {
+      modelConfig.baseOptions.delegate = "CPU";
+      faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, modelConfig);
+      gazeReady = true;
+      setDebugText('dbgGazeStatus', 'ready (CPU fallback)');
+    } catch (e2) {
+      console.error("Gaze tracking failed on both GPU and CPU:", e2);
+      gazeReady = false;
+      setDebugText('dbgGazeStatus', 'FAILED — ' + (e2.message || e2));
+    }
+  }
+}
+
+function setDebugText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function gazeLoop() {
+  if (!gazeLoopActive || !gazeReady) return;
+  const video = document.getElementById('camFeed');
+  if (video.readyState >= 2) {
+    const now = performance.now();
+    const result = faceLandmarker.detectForVideo(video, now);
+    if (result.faceLandmarks && result.faceLandmarks.length > 0) {
+      const lm = result.faceLandmarks[0];
+      const leftIris = lm[468], rightIris = lm[473];
+      if (leftIris && rightIris) {
+        gazeSamples.push({
+          t: now,
+          x: (leftIris.x + rightIris.x) / 2,
+          y: (leftIris.y + rightIris.y) / 2
+        });
+      }
+    } else if (gazeSamples.length === 0) {
+      console.warn("No face detected yet — check camera framing/lighting");
+    }
+    setDebugText('dbgGazeSamples', String(gazeSamples.length));
+    const liveSweeps = countSweeps(gazeSamples);
+    setDebugText('dbgGazeSweeps', String(liveSweeps));
+  }
+  requestAnimationFrame(gazeLoop);
+}
+
+function countSweeps(samples) {
+  let sweeps = 0;
+  for (let i = 2; i < samples.length; i++) {
+    const dx1 = samples[i-1].x - samples[i-2].x;
+    const dx2 = samples[i].x - samples[i-1].x;
+    if (dx1 > 0.01 && dx2 < -0.03) sweeps++;
+  }
+  return sweeps;
+}
+
+function analyzeGaze() {
+  if (gazeSamples.length < 10) {
+    return { sweeps: 0, sweepsPerSec: 0, suspicious: false, insufficient: true };
+  }
+  const sweeps = countSweeps(gazeSamples);
+  const durationSec = (gazeSamples[gazeSamples.length - 1].t - gazeSamples[0].t) / 1000;
+  const sweepsPerSec = durationSec > 0 ? sweeps / durationSec : 0;
+  const suspicious = sweepsPerSec > 0.3 && durationSec > 3;
+  return { sweeps, sweepsPerSec, suspicious, insufficient: false };
+}
+
+async function startSession() {
+  document.getElementById('setupPanel').classList.add('hidden');
+  await checkAudioDevices();
+  await setupCameraFeed();
+  initGazeTracking();
+  document.getElementById('interviewPanel').classList.remove('hidden');
+  showQuestion();
+}
+
+async function setupCameraFeed() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+    const video = document.getElementById('camFeed');
+    video.srcObject = stream;
+  } catch (e) {
+    console.warn("Camera unavailable, gaze signal will be skipped:", e);
+  }
+}
+
+async function checkAudioDevices() {
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audioDevices = devices.filter(d => d.kind === "audioinput" || d.kind === "audiooutput");
+    setDebugText('dbgAudioDevices', audioDevices.length
+      ? audioDevices.map(d => d.label || '(blank label — permission issue?)').join(' | ')
+      : 'none found');
+    const suspects = audioDevices.filter(d => VIRTUAL_AUDIO_PATTERNS.test(d.label));
+    if (suspects.length > 0) {
+      deviceFlag = {
+        flagged: true,
+        detail: `A virtual audio device was connected during the interview: ${suspects.map(s => s.label).join(", ")}`
+      };
+    }
+  } catch (e) {
+    console.error("enumerateDevices failed:", e);
+    deviceFlag = { flagged: false, detail: "Could not check audio devices (permission denied or unsupported browser)" };
+    setDebugText('dbgAudioDevices', 'enumeration failed: ' + e.message);
+  }
+}
+
+function showQuestion() {
+  document.getElementById('qCounter').textContent = `Question ${currentQ + 1} of ${QUESTIONS.length}`;
+  document.getElementById('question').textContent = QUESTIONS[currentQ];
+  document.getElementById('transcript').textContent = "Transcript will appear here as you speak…";
+  document.getElementById('latencyReadout').textContent = "";
+  document.getElementById('micBtn').disabled = false;
+  document.getElementById('doneBtn').disabled = true;
+  questionShownAt = Date.now();
+  speechStartedAt = null;
+  currentTranscript = "";
+}
+
+function beginAnswer() {
+  document.getElementById('micBtn').disabled = true;
+  document.getElementById('doneBtn').disabled = false;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('transcript').textContent = "Speech recognition not supported in this browser — use Chrome.";
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
+
+  recognition.onresult = (event) => {
+    if (speechStartedAt === null) {
+      speechStartedAt = Date.now();
+      const latencyMs = speechStartedAt - questionShownAt;
+      document.getElementById('latencyReadout').textContent = `Time to first word: ${(latencyMs/1000).toFixed(1)}s`;
+    }
+    let interim = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) currentTranscript += t + " ";
+      else interim += t;
+    }
+    document.getElementById('transcript').textContent = (currentTranscript + interim).trim();
+  };
+
+  recognition.onerror = (e) => console.warn("Speech recognition error:", e.error);
+  recognition.start();
+  recognizing = true;
+
+  gazeSamples = [];
+  gazeLoopActive = true;
+  setDebugText('dbgGazeSamples', '0');
+  setDebugText('dbgGazeSweeps', '0');
+  requestAnimationFrame(gazeLoop);
+}
+
+function finishAnswer() {
+  if (recognition && recognizing) {
+    recognition.stop();
+    recognizing = false;
+  }
+  gazeLoopActive = false;
+  const gazeResult = analyzeGaze();
+
+  const latencyMs = speechStartedAt ? (speechStartedAt - questionShownAt) : null;
+  const words = currentTranscript.trim().split(/\s+/).filter(Boolean);
+  const wordCount = words.length;
+  const lowerTranscript = currentTranscript.toLowerCase();
+  let fillerCount = 0;
+  FILLER_WORDS.forEach(fw => {
+    const re = new RegExp(`\\b${fw}\\b`, "g");
+    const matches = lowerTranscript.match(re);
+    if (matches) fillerCount += matches.length;
+  });
+  const fillerRate = wordCount > 0 ? (fillerCount / wordCount) : 0;
+
+  results.push({ latencyMs, wordCount, fillerCount, fillerRate, gaze: gazeResult });
+
+  currentQ++;
+  if (currentQ < QUESTIONS.length) {
+    showQuestion();
+  } else {
+    document.getElementById('interviewPanel').classList.add('hidden');
+    renderDashboard();
+  }
+}
+
+// ---------- Plain-language reasoning ----------
+
+// Returns a single most-notable reason for a question, prioritized:
+// reading behaviour > long delay > unusually clean speech > normal
+function getQuestionReason(r) {
+  if (r.wordCount === 0 && r.latencyMs === null) {
+    return {
+      flagged: false,
+      inconclusive: true,
+      short: "No speech captured",
+      detail: "No spoken answer was picked up for this question — check the microphone and browser permissions. This question can't be scored either way."
+    };
+  }
+  if (r.gaze && r.gaze.suspicious) {
+    return {
+      flagged: true,
+      short: "Reading behaviour detected",
+      detail: `Candidate's eyes repeatedly moved in a left-to-right scanning pattern (${r.gaze.sweeps} sweeps), consistent with reading text off-screen.`
+    };
+  }
+  if (r.latencyMs && r.latencyMs > INDIVIDUAL_LATENCY_FLAG_MS) {
+    return {
+      flagged: true,
+      short: `Long delay before speaking (${(r.latencyMs/1000).toFixed(1)}s)`,
+      detail: `Candidate waited ${(r.latencyMs/1000).toFixed(1)} seconds before answering — longer than a typical thinking pause.`
+    };
+  }
+  if (r.fillerCount === 0 && r.wordCount > 12) {
+    return {
+      flagged: true,
+      short: "Unusually smooth, scripted-sounding answer",
+      detail: `Answer had ${r.wordCount} words with no natural pauses or filler words ("um", "uh", etc.), which is uncommon in spontaneous speech.`
+    };
+  }
+  return { flagged: false, short: "Normal", detail: "Answered normally — no notable timing, speech, or gaze anomalies." };
+}
+
+function renderDashboard() {
+  document.getElementById('dashboard').classList.remove('hidden');
+
+  const candidateName = document.getElementById('candidateName')?.value?.trim() || "Not provided";
+  const interviewDate = document.getElementById('interviewDate')?.value || new Date().toISOString().slice(0,10);
+  document.getElementById('repCandidate').textContent = candidateName;
+  document.getElementById('repDate').textContent = interviewDate;
+  document.getElementById('repQCount').textContent = String(results.length);
+
+  const noSpeechCount = results.filter(r => r.wordCount === 0 && r.latencyMs === null).length;
+  const allSilent = noSpeechCount === results.length;
+
+  const latencies = results.map(r => r.latencyMs).filter(v => v !== null);
+  const hasLatencyData = latencies.length >= 2;
+  const mean = hasLatencyData ? latencies.reduce((a,b) => a+b, 0) / latencies.length : null;
+  const variance = hasLatencyData ? latencies.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / latencies.length : null;
+  const stdev = hasLatencyData ? Math.sqrt(variance) : null;
+  const latencySuspicious = hasLatencyData && mean > 2500 && stdev < 700;
+
+  // Only judge fluency on answers with enough words to say anything meaningful —
+  // an unanswered question (0 words) is missing data, not "suspiciously clean" speech.
+  const scorable = results.filter(r => r.wordCount >= MIN_WORDS_FOR_SPEECH_ANALYSIS);
+  const avgFillerRate = scorable.length ? scorable.reduce((a,r) => a + r.fillerRate, 0) / scorable.length : null;
+  const fillerSuspicious = avgFillerRate !== null && avgFillerRate < 0.01 && scorable.length >= 3;
+
+  const gazeResults = results.map(r => r.gaze).filter(g => g && !g.insufficient);
+  const gazeFlaggedCount = gazeResults.filter(g => g.suspicious).length;
+  const gazeSuspicious = gazeResults.length >= 2 && (gazeFlaggedCount / gazeResults.length) >= 0.5;
+
+  const signalFlags = [deviceFlag.flagged, latencySuspicious, fillerSuspicious, gazeSuspicious];
+  const matchedSignals = signalFlags.filter(Boolean).length;
+
+  let score = 0;
+  if (deviceFlag.flagged) score += 35;
+  if (latencySuspicious) score += 25;
+  if (fillerSuspicious) score += 20;
+  if (gazeSuspicious) score += 20;
+
+  let bucket = "clean", label = "Clean";
+  if (allSilent) {
+    bucket = "suspicious"; // reuse the amber styling for "needs attention", not a risk claim
+    label = "Inconclusive";
+  } else if (score >= 60) { bucket = "high"; label = "High risk"; }
+  else if (score >= 25) { bucket = "suspicious"; label = "Suspicious"; }
+
+  // ---- Risk card ----
+  const riskEl = document.getElementById('overallRiskText');
+  riskEl.textContent = label;
+  riskEl.className = "risk-value " + bucket;
+  document.getElementById('riskReasonText').textContent = allSilent
+    ? "No speech was captured for any question, so this session can't be scored. Check the microphone and re-run."
+    : (matchedSignals === 0
+      ? "No cheating indicators were detected in this session."
+      : `${matchedSignals} of 4 signals matched patterns associated with hidden AI assistance.`);
+  const riskBar = document.getElementById('riskBar');
+  riskBar.style.width = allSilent ? "100%" : Math.min(100, score) + "%";
+  riskBar.className = "bar-fill " + bucket;
+
+  // ---- Confidence card ----
+  const confidence = allSilent ? 0 : (matchedSignals === 0 ? 85 : Math.min(95, 40 + matchedSignals * 15));
+  document.getElementById('confidenceText').textContent = allSilent ? "N/A" : confidence + "%";
+  document.getElementById('confidenceReasonText').textContent = allSilent
+    ? "No usable data — this isn't a signal, it's a technical failure to capture speech."
+    : (matchedSignals === 0
+      ? "High confidence this session reads as clean."
+      : `Based on ${matchedSignals} of 4 independent signals agreeing.`);
+  document.getElementById('confidenceBar').style.width = (allSilent ? 0 : confidence) + "%";
+
+  // ---- What we noticed ----
+  const noticeList = document.getElementById('noticeList');
+  noticeList.innerHTML = "";
+  const notices = [];
+
+  if (allSilent) {
+    notices.push({ ok: false, text: "We couldn't pick up any spoken answers in this session — the microphone may not have been working, or permission wasn't granted. Nothing below reflects real behavior; please re-run the session." });
+  } else if (noSpeechCount > 0) {
+    notices.push({ ok: false, text: `We couldn't pick up a spoken answer for ${noSpeechCount} of ${results.length} questions — those questions are excluded from the scoring below.` });
+  }
+
+  if (deviceFlag.flagged) {
+    notices.push({ ok: false, text: deviceFlag.detail });
+  } else {
+    notices.push({ ok: true, text: "No virtual audio devices were detected — audio came from normal hardware." });
+  }
+
+  if (!hasLatencyData) {
+    notices.push({ ok: true, text: "Not enough timed answers to judge response delay." });
+  } else if (latencySuspicious) {
+    notices.push({ ok: false, text: `Candidate's response delay was unusually consistent across answers (avg ${(mean/1000).toFixed(1)}s, very little variation) — a pattern seen when reading a generated answer rather than thinking spontaneously.` });
+  } else {
+    notices.push({ ok: true, text: `Response timing looked natural (avg ${(mean/1000).toFixed(1)}s, varied between questions).` });
+  }
+
+  if (avgFillerRate === null) {
+    notices.push({ ok: true, text: "Not enough spoken words to judge natural pauses or filler words." });
+  } else if (fillerSuspicious) {
+    notices.push({ ok: false, text: `Candidate's speech had almost no natural pauses or filler words ("um", "uh") across multiple answers — most spontaneous speech includes some.` });
+  } else {
+    notices.push({ ok: true, text: "Candidate's speech included natural pauses and filler words, consistent with spontaneous talking." });
+  }
+
+  if (gazeSuspicious) {
+    notices.push({ ok: false, text: `Candidate repeatedly looked away from the camera in a scanning pattern on ${gazeFlaggedCount} of ${gazeResults.length} answers, consistent with reading text off-screen.` });
+  } else if (gazeReady && gazeResults.length > 0) {
+    notices.push({ ok: true, text: "No repeated reading-style eye movement was detected." });
+  } else {
+    notices.push({ ok: true, text: "Eye-movement tracking was unavailable or inconclusive for this session (camera or model issue)." });
+  }
+
+  // Per-question call-outs, only for flagged questions, added to the same list
+  results.forEach((r, i) => {
+    const reason = getQuestionReason(r);
+    if (reason.flagged) {
+      notices.push({ ok: false, text: `Question ${i+1}: ${reason.detail}` });
+    }
+  });
+
+  notices.forEach(n => {
+    const li = document.createElement('li');
+    li.className = n.ok ? "ok" : "warn";
+    li.innerHTML = `<span class="icon">${n.ok ? "&#10003;" : "!"}</span><span>${n.text}</span>`;
+    noticeList.appendChild(li);
+  });
+
+  // ---- Question by question ----
+  const qContainer = document.getElementById('questionBreakdown');
+  qContainer.innerHTML = "";
+  const flaggedQuestionNumbers = [];
+  results.forEach((r, i) => {
+    const reason = getQuestionReason(r);
+    if (reason.flagged) flaggedQuestionNumbers.push(i + 1);
+    const card = document.createElement('div');
+    card.className = "qcard";
+    const gazeStr = r.gaze.insufficient ? "n/a" : `${r.gaze.sweeps} sweeps (${r.gaze.sweepsPerSec.toFixed(2)}/s)`;
+    let badgeClass = "clean", badgeText = "Normal";
+    if (reason.inconclusive) { badgeClass = "info"; badgeText = "Inconclusive"; }
+    else if (reason.flagged) { badgeClass = "suspicious"; badgeText = "Flagged"; }
+    card.innerHTML = `
+      <div>
+        <div class="qtitle">Question ${i+1}</div>
+        <div class="qreason">${reason.short}</div>
+        <div class="qmetrics">delay ${r.latencyMs !== null ? (r.latencyMs/1000).toFixed(1)+'s' : '—'} · fillers ${r.fillerCount} · gaze ${gazeStr}</div>
+      </div>
+      <span class="badge ${badgeClass}">${badgeText}</span>
+    `;
+    qContainer.appendChild(card);
+  });
+
+  // ---- Recommendation ----
+  const recText = document.getElementById('recommendationText');
+  if (allSilent) {
+    recText.textContent = "This session couldn't be scored because no spoken answers were captured. Please check the microphone and browser permissions, then re-run the session before making any decision.";
+  } else if (bucket === "clean") {
+    recText.textContent = "No indicators of AI-assisted answering were found in this session.";
+  } else {
+    const qList = flaggedQuestionNumbers.length
+      ? `Question${flaggedQuestionNumbers.length > 1 ? 's' : ''} ${flaggedQuestionNumbers.join(', ')}`
+      : "the flagged evidence above";
+    recText.textContent = `This session shows ${matchedSignals} of 4 indicators that may suggest AI assistance. Please review ${qList} before making a hiring decision.`;
+  }
+
+  // Stash computed values for PDF export
+  window.__reportData = {
+    candidateName, interviewDate, bucket, label, score, confidence, matchedSignals,
+    notices, results: results.map((r, i) => ({ ...r, reason: getQuestionReason(r), num: i + 1 })),
+    deviceFlag, recommendation: recText.textContent
+  };
+}
+
+function downloadSessionData() {
+  const label = document.getElementById('sessionLabel')?.value || "unlabeled";
+  const payload = {
+    label,
+    timestamp: new Date().toISOString(),
+    candidateName: document.getElementById('candidateName')?.value || null,
+    interviewDate: document.getElementById('interviewDate')?.value || null,
+    deviceFlag,
+    perQuestion: results.map(r => ({
+      latencyMs: r.latencyMs,
+      wordCount: r.wordCount,
+      fillerCount: r.fillerCount,
+      fillerRate: r.fillerRate,
+      gazeSweeps: r.gaze.insufficient ? null : r.gaze.sweeps,
+      gazeSweepsPerSec: r.gaze.insufficient ? null : r.gaze.sweepsPerSec
+    }))
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `session-${label}-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadPdfReport() {
+  const data = window.__reportData;
+  if (!data || !window.jspdf) {
+    alert("Report data isn't ready yet — finish the interview first.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const marginX = 48;
+  let y = 56;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const maxWidth = pageWidth - marginX * 2;
+
+  function writeLine(text, opts = {}) {
+    const size = opts.size || 11;
+    const bold = opts.bold || false;
+    const gap = opts.gap || 16;
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, maxWidth);
+    lines.forEach(line => {
+      if (y > 780) { doc.addPage(); y = 56; }
+      doc.text(line, marginX, y);
+      y += gap;
+    });
+  }
+
+  writeLine("Interview Integrity Report", { size: 18, bold: true, gap: 26 });
+  writeLine(`Candidate: ${data.candidateName}`, { size: 11, gap: 15 });
+  writeLine(`Date: ${data.interviewDate}`, { size: 11, gap: 15 });
+  writeLine(`Questions asked: ${data.results.length}`, { size: 11, gap: 22 });
+
+  writeLine(`Overall Risk: ${data.label}  (score ${data.score}/100)`, { size: 13, bold: true, gap: 18 });
+  writeLine(`Confidence: ${data.confidence}%  — based on ${data.matchedSignals} of 4 signals matching`, { size: 11, gap: 24 });
+
+  writeLine("Evidence", { size: 13, bold: true, gap: 18 });
+  data.notices.forEach(n => {
+    writeLine(`${n.ok ? '-' : '!'} ${n.text}`, { size: 10.5, gap: 14 });
+  });
+  y += 8;
+
+  writeLine("Question by question", { size: 13, bold: true, gap: 18 });
+  data.results.forEach(r => {
+    writeLine(`Question ${r.num}: ${r.reason.short}`, { size: 10.5, bold: true, gap: 13 });
+    writeLine(`  ${r.reason.detail}`, { size: 10, gap: 15 });
+  });
+  y += 8;
+
+  writeLine("Recommendation", { size: 13, bold: true, gap: 18 });
+  writeLine(data.recommendation, { size: 10.5, gap: 14 });
+  writeLine("This is NOT proof of cheating. A reviewer should examine the highlighted answers before making a decision.", { size: 9.5, gap: 20 });
+
+  writeLine("What this tool can and can't tell you: it looks for signs that are common when someone uses a hidden AI assistant, but it can't identify which tool was used, and it won't catch a second device kept fully out of view (like a phone off-camera). Treat this as a helpful signal, not a final answer.", { size: 9, gap: 12 });
+
+  const safeName = (data.candidateName || "candidate").replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+  doc.save(`interview-report-${safeName}-${Date.now()}.pdf`);
+}
+
+window.startSession = startSession;
+window.beginAnswer = beginAnswer;
+window.finishAnswer = finishAnswer;
+window.downloadSessionData = downloadSessionData;
+window.downloadPdfReport = downloadPdfReport;
+</script>
+</body>
+</html>
