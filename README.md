@@ -1,82 +1,91 @@
-# Interview Integrity Monitor
+# 🛡️ Interview Integrity Monitor
 
-## Overview
-
-Interview Integrity Monitor is a zero-install web application that helps recruiters identify possible AI-assisted cheating during online interviews.
-
-Instead of detecting specific AI tools, it analyzes behavioral signals that may indicate external assistance and presents the findings to a human reviewer.
+> 🚀 A zero-install web application that helps recruiters identify possible AI-assisted cheating during remote interviews.
 
 ---
 
-## Features
+## 📌 Overview
 
-- Virtual audio device detection
-- Response delay analysis
-- Speech transcription
-- Filler-word analysis
-- Eye movement analysis using MediaPipe
-- Risk scoring (Low / Medium / High)
-- Recruiter-friendly dashboard
-- Downloadable JSON session report
-- Threshold calibration tool
+Interview Integrity Monitor detects **behavioral signals** that may indicate AI-assisted interview cheating without installing any software on the candidate's computer.
+
+Instead of detecting specific AI tools, it analyzes multiple signals and provides a **risk score** along with clear evidence for a human reviewer.
+
+> ⚠️ This system is designed to **assist recruiters**, not automatically reject candidates.
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-- HTML
-- CSS
-- JavaScript
-- MediaPipe Face Landmarker
-- Web Speech API
-- Python
-- Matplotlib
+- 🎧 Virtual Audio Device Detection
+- ⏱️ Response Delay Analysis
+- 🎤 Speech Recognition & Transcription
+- 💬 Filler Word Analysis
+- 👀 Eye Movement Analysis (MediaPipe)
+- 📊 Risk Score (Low / Medium / High)
+- 📋 Recruiter-Friendly Dashboard
+- 📥 Download Session Report (JSON)
+- 📈 Calibration Tool for Threshold Tuning
 
 ---
 
-## Project Structure
+## 🛠️ Tech Stack
 
-```
+| Technology | Purpose |
+|------------|---------|
+| 🌐 HTML | User Interface |
+| 🎨 CSS | Styling |
+| ⚡ JavaScript | Detection Logic |
+| 👁️ MediaPipe Face Landmarker | Eye Tracking |
+| 🎙️ Web Speech API | Speech Recognition |
+| 🐍 Python | Calibration Tool |
+| 📊 Matplotlib | Session Analysis |
+
+---
+
+## 📂 Project Structure
+
+```text
 Interview-Integrity-Monitor/
 │
-├── index.html
-├── analyze_sessions.py
-├── README.md
-├── requirements.txt
-└── sample_sessions/
+├── 📄 index.html
+├── 🐍 analyze_sessions.py
+├── 📘 README.md
+├── 📦 requirements.txt
+├── 📁 sample_sessions/
+└── 📁 screenshots/
 ```
 
 ---
 
-## Installation
+## ⚙️ Installation
 
-Clone the repository
+### 1️⃣ Clone the Repository
 
 ```bash
 git clone <repository-url>
 ```
 
-Go to the project folder
+### 2️⃣ Open the Project
 
 ```bash
 cd Interview-Integrity-Monitor
 ```
 
-Create a virtual environment
+### 3️⃣ Create a Virtual Environment
 
 ```bash
 python -m venv venv
 ```
 
-Activate the virtual environment
+### 4️⃣ Activate the Environment
 
-Windows
+**Windows**
 
 ```bash
 .\venv\Scripts\activate
 ```
 
-Install dependencies
+### 5️⃣ Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -84,65 +93,86 @@ pip install -r requirements.txt
 
 ---
 
-## Run the Project
+## ▶️ Run the Application
 
-Start a local server
+Start a local web server
 
 ```bash
 python -m http.server 8000
 ```
 
-Open
+Open your browser and visit
 
 ```
 http://localhost:8000
 ```
 
-Use Google Chrome for the best experience because the application uses the Web Speech API.
+> 💡 For the best experience, use **Google Chrome**, as the application relies on the Web Speech API.
 
 ---
 
-## Calibration
+## 🔍 Detection Signals
 
-To analyze collected interview sessions, run
+The system combines multiple signals to estimate interview integrity:
+
+- 🎧 Virtual Audio Device Detection
+- ⏱️ Response Latency Analysis
+- 💬 Speech Pattern Analysis
+- 👀 Eye Movement Detection
+
+These signals are combined into a **risk score** instead of making a binary decision.
+
+---
+
+## 📊 Risk Levels
+
+| Level | Meaning |
+|------|---------|
+| 🟢 Low | No significant suspicious activity |
+| 🟡 Medium | Some suspicious behavior detected |
+| 🔴 High | Multiple signals suggest possible AI assistance |
+
+---
+
+## 📈 Calibration Tool
+
+Analyze collected interview sessions using:
 
 ```bash
 python analyze_sessions.py sample_sessions
 ```
 
-This generates calibration statistics and charts for tuning detection thresholds.
+The tool generates:
+
+- 📊 Signal distributions
+- 📉 Threshold suggestions
+- 🖼️ Calibration charts
 
 ---
 
-## Detection Signals
+## 🚧 Limitations
 
-- Virtual audio devices
-- Response latency
-- Speech patterns
-- Eye movement patterns
-
-The application combines multiple signals into a risk score rather than relying on a single indicator.
+- ❌ Does not identify specific AI tools by name.
+- 📱 Cannot detect off-camera devices such as phones or another laptop.
+- 🤝 Does not automatically reject candidates.
+- 👨‍💼 Results are intended to support human reviewers.
 
 ---
 
-## Limitations
+## 🚀 Future Improvements
 
-- Does not detect specific AI tools by name.
-- Cannot detect a second phone or another off-camera device.
-- Does not automatically reject candidates.
-- Results should always be reviewed by a human.
-
----
-
-## Future Improvements
-
-- Adaptive threshold calibration
-- Additional behavioral signals
-- Recruiter analytics dashboard
-- PDF report generation
+- 📄 PDF Report Generation
+- 📡 Real-Time Recruiter Dashboard
+- 🤖 Adaptive Threshold Calibration
+- 📊 Recruiter Analytics
+- ☁️ Cloud Deployment
 
 ---
 
-## License
+## 📜 License
 
-This project was developed as part of the **InCruiter Interview Integrity Hackathon**.
+Developed as part of the **🏆 InCruiter – Catch the Invisible AI Cheater Hackathon**.
+
+---
+
+## ⭐ If you found this project useful, consider giving it a star!
